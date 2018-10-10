@@ -170,7 +170,37 @@ get_singleton:
 ## }
 
 board_done:
-    jr  $ra
+    #$t0 = i, $t1 = j
+    li  $t0, 0
+    li  $s0, 9
+    
+    for_i:
+        slt     $t2, $t0, $s0
+        li      $t4, 1
+        li      $t1, 1
+        bne     $t2, $t4, end_for_i
+        for_j:
+            slt     $t3, $t1, $s0
+            li      $t4, 1
+            bne     $t3, $t4, incr_for_i
+                #j end_for_j
+##              if (!singleton(board[i][j])) {
+##                return false;
+##              }
+            be  $?, $?, incr_for_j
+            j end_for_j
+            incr_for_j:
+                addi    $t1, $t1, 1
+                j       for_j
+            end_for_j:
+                li      $v0, 0
+                jr      $ra
+    incr_for_i:
+        addi    $t0, $t0, 1
+        j       for_i
+    end_for_i:
+        add     $v0, $t0, $0
+        jr  $ra
     
 ## void
 ## print_board(int board[GRID_SQUARED][GRID_SQUARED]) {
