@@ -9,6 +9,11 @@ board2: .word 128 8 256 16 32 64 4 2 1 64 32 4 1 128 2 8 16 256 1 2 16 4 8 256 3
 main:
     sub         $sp, $sp, 4
     sw          $ra, 0($sp) # save $ra on stack
+    
+    # Our global variables
+    li          $s0, 9
+    mult        $s0, $s0
+    mflo        $s1
 
     # test singleton (true case)
     li  $a0, 0x010
@@ -138,21 +143,20 @@ singleton:
 ## }
 get_singleton:
     li  $t0, 0
-    li  $s0, 9
 
-    for:
+    for_a:
         slt     $t1, $t0, $s0
         li      $t3, 1
-        bne     $t1, $t3, end_for
+        bne     $t1, $t3, end_for_a
         li      $t2, 1
         sllv    $t2, $t2, $t0
         
-        bne     $a0, $t2, incr_for
-        j       end_for
-    incr_for:
+        bne     $a0, $t2, incr_for_a
+        j       end_for_a
+    incr_for_a:
         addi    $t0, $t0, 1
-        j       for
-    end_for:
+        j       for_a
+    end_for_a:
         add     $v0, $t0, $0
         jr  $ra
 
@@ -170,36 +174,47 @@ get_singleton:
 ## }
 
 board_done:
-    #$t0 = i, $t1 = j
+    #$t0 = i
     li  $t0, 0
-    li  $s0, 9
     
-    for_i:
-        slt     $t2, $t0, $s0
-        li      $t4, 1
-        li      $t1, 1
-        bne     $t2, $t4, end_for_i
-        for_j:
-            slt     $t3, $t1, $s0
-            li      $t4, 1
-            bne     $t3, $t4, incr_for_i
-                #j end_for_j
-##              if (!singleton(board[i][j])) {
-##                return false;
-##              }
-            be  $?, $?, incr_for_j
-            j end_for_j
-            incr_for_j:
-                addi    $t1, $t1, 1
-                j       for_j
-            end_for_j:
-                li      $v0, 0
-                jr      $ra
-    incr_for_i:
+    for_b:
+        slt     $t1, $t0, $s1
+        li      $t2, 1
+        bne     $t1, $t2, end_for_b
+        
+        # Multiply i by 4 to calculate the offset for ptr address from the base address to access the element
+        sll		$t3, $t0, 2
+        # Address of the element that will be accessed
+        add		$t3, $a0, $t3
+        
+        # Prep code to call singleton function
+        addi	$sp, $sp, -12	# $sp = $sp + -12
+		sw		$ra, 0($sp)		# store $ra into sp(0)
+		sw		$a0, 4($sp)		# store the base address
+        sw		$t0, 8($sp)		# store the ctr
+        
+        # Load arguement and call function
+        lw		$a0, 0($t3)
+        jal		singleton
+        
+        # Post code for singleton function
+        lw		$ra, 0($sp)		# restore $ra
+		lw		$a0, 4($sp)		# restore $a0
+        lw		$t0, 8($sp)		# restore the ctr
+		addi	$sp, $sp, 12	# $sp = $sp + 12
+        
+        # Checks if accessed element is empty
+        beq		$v0, $0, return_b
+        
+		j incr_for_b
+        
+    incr_for_b:
         addi    $t0, $t0, 1
-        j       for_i
-    end_for_i:
-        add     $v0, $t0, $0
+        j       for_b
+    end_for_b:
+        li		$v0, 1
+        j return_b
+    return_b:
         jr  $ra
     
 ## void

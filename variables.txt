@@ -1,1 +1,3 @@
-$s0 = GRID_SQUARED
+$s0 = GRID_SQUARED = 9
+$s1 = GRID_SQUARED * GRID_SQUARED = 81
+$a0 = Base Address
