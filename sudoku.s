@@ -233,7 +233,7 @@ board_done:
 ## }
 
 print_board:
-    li $t7, 42
+    li $t7, 8
 
     #$t0 = i
 	li  $t0, 0
@@ -259,13 +259,13 @@ print_board:
 		jal		singleton
         
         # Either prints star or the value
-		beq		$v0, $0, print_null
+		beq		$v0, $0, print_star_helper
         
 		jal     get_singleton
         # Adding offset of 1
 		addi	$a0, $v0, 1
-        li		$v0, 1		# system call #1 - print int
-		syscall				# execute
+        li		$v0, 1
+		syscall
         
         load:
             # Post code for singleton function
@@ -273,7 +273,25 @@ print_board:
             lw		$a0, 4($sp)		# restore $a0
             lw		$t0, 8($sp)		# restore the ctr
             addi	$sp, $sp, 12	# $sp = $sp + 12
-            
+        
+        # Mod operation
+        div $t0, $s0       # i mod 9
+        mfhi $t4           # temp for the mod
+        
+        bne $t4, $t7, incr_for_c
+        
+        # Prep code to call print_newline function
+		addi	$sp, $sp, -8	# $sp = $sp + -8
+		sw		$ra, 0($sp)		# store $ra into sp(0)
+		sw		$a0, 4($sp)		# store $a0
+        
+        jal print_newline
+        
+        # Post code for print_newline function
+        lw		$ra, 0($sp)		# restore $ra
+        lw		$a0, 4($sp)		# restore $a0
+        addi	$sp, $sp, 8	# $sp = $sp + 8
+        
 		j incr_for_c
 		
 	incr_for_c:
@@ -282,7 +300,7 @@ print_board:
 	end_for_c:
 		li		$v0, 1
 		j	   return_c
-    print_null:
+    print_star_helper:
         jal print_star
         
         j load
